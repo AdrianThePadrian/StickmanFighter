@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 1aeaf8acbc0cc524d88f3f3f4f072665
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - movement: {fileID: 7400559825766725220, guid: df37dffe5812dc14c9cce5aa63dfeced, type: 3}
+  - highAttack: {fileID: 6206334698870356392, guid: df37dffe5812dc14c9cce5aa63dfeced, type: 3}
+  - lowAttack: {fileID: 3112585656007625724, guid: df37dffe5812dc14c9cce5aa63dfeced, type: 3}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
