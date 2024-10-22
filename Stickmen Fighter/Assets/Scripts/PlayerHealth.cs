@@ -9,25 +9,24 @@ public class PlayerHealth : MonoBehaviour
     public int maxHealth = 3;
     private int currentHealth;
 
+    public HealthBar healthBar;
+
     private void Start()
     {
         ResetHealth();
+        healthBar.Initialize(maxHealth);
     }
 
     public void TakeDamage(int damage)
     {
         currentHealth -= damage;
+        healthBar.UpdateHealthBar(currentHealth);
         Debug.Log(gameObject.name + " took " + damage + " damage. Current health: " + currentHealth);
 
         if(currentHealth <= 0)
         {
             Die();
         }
-    }
-
-    private void UpdateHealthBar()
-    {
-
     }
 
     private void Die()
@@ -39,5 +38,6 @@ public class PlayerHealth : MonoBehaviour
     public void ResetHealth()
     {
         currentHealth = maxHealth;
+        healthBar.UpdateHealthBar(currentHealth);
     }
 }

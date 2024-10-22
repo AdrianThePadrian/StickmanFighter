@@ -10,6 +10,8 @@ public class PlayerSpawner : MonoBehaviour
 
     public static PlayerSpawner instance { get; private set; }
 
+    public GameManager gameManager;
+
     public Transform player1Spawn;
     public Transform player2Spawn;
 
@@ -42,6 +44,8 @@ public class PlayerSpawner : MonoBehaviour
     }
     private void OnPlayerJoined(PlayerInput playerInput)
     {
+        
+        ScalePlayerToCollider(playerPrefab);
         // Check player index and set their spawn position accordingly
         if (playerInput.playerIndex == 0)
         {
@@ -58,6 +62,9 @@ public class PlayerSpawner : MonoBehaviour
             playerInput.transform.rotation = Quaternion.Euler(0, 180, 0);
 
         }
+
+        PlayerHealth playerHealth = playerPrefab.GetComponent<PlayerHealth>();
+        gameManager.AssignHealthBarsToPlayers(playerHealth, playerInput.playerIndex);
     }
     private void ScalePlayerToCollider(GameObject player)
     {

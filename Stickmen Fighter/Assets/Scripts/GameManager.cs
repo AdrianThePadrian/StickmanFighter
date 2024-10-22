@@ -17,13 +17,24 @@ public class GameManager : MonoBehaviour
     private int player2Wins = 0;
     public int totalRounds = 3;
 
-    public PlayerController player1;
-    public PlayerController player2;
+    private PlayerController player1;
+    private PlayerController player2;
+    public PlayerHealth playerHealth;
 
     private bool isRoundActive = false;
 
+    public HealthBar player1HealthBar;
+    public HealthBar player2HealthBar;
+
+    
+
     private void Awake()
     {
+        playerHealth = GetComponent<PlayerHealth>();
+
+        player1HealthBar.Initialize(3);
+        player2HealthBar.Initialize(3);
+
         if (instance == null)
         {
             instance = this;
@@ -56,12 +67,26 @@ public class GameManager : MonoBehaviour
         else if (playerInput.playerIndex == 1)
         {
             player2 = playerInput.GetComponent<PlayerController>();
+
         }
 
         // If both players have joined, start the round
         if (player1 != null && player2 != null)
         {
+
             StartRound();
+        }
+    }
+
+    public void AssignHealthBarsToPlayers(PlayerHealth playerHealth, int playerIndex)
+    {
+        if (playerIndex == 0)
+        {
+            playerHealth.healthBar = player1HealthBar;
+        }
+        else if (playerIndex == 1)
+        {
+            playerHealth.healthBar = player2HealthBar;
         }
     }
 

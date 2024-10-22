@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using static UnityEditor.Experimental.GraphView.GraphView;
 
+
 public class PlayerController : MonoBehaviour
 {
     private Vector2 moveInput;
@@ -68,6 +69,8 @@ public class PlayerController : MonoBehaviour
             }
         }
     }
+
+
 
     // This method is called by the Input System when the "Move" action is triggered
     public void OnMove(InputValue value)
