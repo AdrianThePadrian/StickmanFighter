@@ -2,12 +2,13 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using static UnityEditor.Experimental.GraphView.GraphView;
 
 public class PlayerController : MonoBehaviour
 {
     private Vector2 moveInput;
-    private Rigidbody2D rb;
-    public float moveSpeed = 5f;
+    private Rigidbody2D rb;  //Rigidbody component
+    public float moveSpeed = 5f;  //Movement Speed
     public int highAttackDamage = 1;  // Damage dealt by the high attack
     public int lowAttackDamage = 1;   // Damage dealt by the low attack
     public Transform highAttackPoint;   // Point from where the high attack will be cast
@@ -16,6 +17,9 @@ public class PlayerController : MonoBehaviour
     public float lowAttackRange = 0.5f; // Range of the low attack
     public LayerMask playerLayer;       // Layer for detecting the other player
     public float knockbackForce = 5f;   // Knockback force applied when hit
+    private int playerIndex;
+
+    private bool isHurt = false;
 
     // Cooldown settings
     public float highAttackCooldown = 1f; // Cooldown duration for high attack
@@ -24,9 +28,31 @@ public class PlayerController : MonoBehaviour
     private bool canAttack = true; // Track if player can attack
     private float attackTimer; // Timer to track cooldown
 
+    //Sprites
+    public Sprite idleSprite;
+    public Sprite highAttackSprite;
+    public Sprite lowAttackSprite;
+    public Sprite hurtSprite;
+    public Sprite victorySprite;
+    public Sprite defeatSprite;
+
+    public SpriteRenderer spriteRenderer;
+    public PlayerHealth playerHealth;
+
+
+
     private void Awake()
     {
+        spriteRenderer = GetComponent<SpriteRenderer>();
+        playerHealth = GetComponent<PlayerHealth>();
+        playerIndex = GetComponent<PlayerInput>().playerIndex;
+        spriteRenderer.sprite = idleSprite; // Set initial sprite to idle
         rb = GetComponent<Rigidbody2D>();
+
+        if (playerHealth == null)
+        {
+            Debug.LogError("PlayerHealth component is missing on " + gameObject.name);
+        }
     }
 
     private void Update()
@@ -52,20 +78,24 @@ public class PlayerController : MonoBehaviour
     // High attack input from the new input system
     public void OnHighAttack(InputValue value)
     {
-        if (value.isPressed && canAttack)
+        if (value.isPressed && canAttack && !isHurt)
         {
             Debug.Log("High Attack Triggered");
             Attack(true); // true for high attack
+            spriteRenderer.sprite = highAttackSprite; // Change Sprite
+            Invoke("ResetToIdle", 0.5f); // Reset Sprite
         }
     }
 
     // Low attack input from the new input system
     public void OnLowAttack(InputValue value)
     {
-        if (value.isPressed && canAttack)
+        if (value.isPressed && canAttack && !isHurt)
         {
             Debug.Log("Low Attack Triggered");
             Attack(false); // false for low attack
+            spriteRenderer.sprite = lowAttackSprite; // Change Sprite
+            Invoke("ResetToIdle", 0.5f); // Reset Sprite
         }
     }
 
@@ -124,6 +154,13 @@ public class PlayerController : MonoBehaviour
                 // Apply damage to the player
                 playerHealth.TakeDamage(damage);
 
+                if (!isHurt)
+                {
+                    isHurt = true;
+                    spriteRenderer.sprite = hurtSprite;
+                    Invoke("ResetToIdle", 0.5f);
+                }
+                
                 // Apply knockback to the hit player
                 Vector2 knockbackDirection = (otherPlayerRb.transform.position - transform.position).normalized;
                 otherPlayerRb.AddForce(knockbackDirection * knockbackForce, ForceMode2D.Impulse);
@@ -131,6 +168,9 @@ public class PlayerController : MonoBehaviour
                 // Apply knockback to the attacker (this player)
                 Vector2 selfKnockbackDirection = (transform.position - otherPlayerRb.transform.position).normalized;
                 rb.AddForce(selfKnockbackDirection * knockbackForce, ForceMode2D.Impulse);
+
+                Debug.DrawLine(otherPlayerRb.position, otherPlayerRb.position + knockbackDirection * knockbackForce, Color.red, 2f);
+                Debug.Log("Knockback applied to: " + player.name + " with force: " + knockbackDirection * knockbackForce);
             }
         }
 
@@ -142,17 +182,29 @@ public class PlayerController : MonoBehaviour
     // Method to check if the player is dodging
     public bool IsDodging()
     {
-        // Return true if the player is currently dodging.
-        // Implement your dodge state check here.
         return false; // Placeholder, replace with actual dodge logic
     }
 
     // Example dodge coroutine
     private IEnumerator Dodge()
     {
-        // Here you might want to add invincibility frames or dodge movement
-        // Example: Temporarily disable the player's collider or set an invincibility flag
         yield return new WaitForSeconds(0.5f); // Duration of the dodge
+    }
+    public void ResetPlayer()
+    {
+        Transform spawnPoint = PlayerSpawner.instance.GetSpawnPoint(playerIndex);
+        if(spawnPoint != null) 
+        {
+            transform.position = spawnPoint.position;
+        }
+
+        playerHealth.ResetHealth();
+        spriteRenderer.sprite = idleSprite;
+    }
+    void ResetToIdle()
+    {
+        isHurt = false;
+        spriteRenderer.sprite = idleSprite;
     }
 
     // Draw the attack range in the editor for visualization

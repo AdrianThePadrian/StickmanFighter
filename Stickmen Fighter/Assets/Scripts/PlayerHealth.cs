@@ -1,6 +1,8 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class PlayerHealth : MonoBehaviour
 {
@@ -9,7 +11,7 @@ public class PlayerHealth : MonoBehaviour
 
     private void Start()
     {
-        currentHealth = maxHealth;
+        ResetHealth();
     }
 
     public void TakeDamage(int damage)
@@ -23,9 +25,19 @@ public class PlayerHealth : MonoBehaviour
         }
     }
 
+    private void UpdateHealthBar()
+    {
+
+    }
+
     private void Die()
     {
         Debug.Log(gameObject.name + " has died!");
-        gameObject.SetActive(false);
+        GameManager.instance.OnPlayerDefeated(GetComponent<PlayerController>());
+    }
+
+    public void ResetHealth()
+    {
+        currentHealth = maxHealth;
     }
 }
