@@ -11,10 +11,10 @@ public class PlayerHealth : MonoBehaviour
 
     public HealthBar healthBar;
 
-    private void Start()
+    private void OnPlayerJoined()
     {
-        ResetHealth();
         healthBar.Initialize(maxHealth);
+        ResetHealth();
     }
 
     public void TakeDamage(int damage)

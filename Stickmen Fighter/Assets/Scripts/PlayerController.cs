@@ -107,7 +107,6 @@ public class PlayerController : MonoBehaviour
     {
         if (value.isPressed)
         {
-            // Implement dodge logic here
             StartCoroutine(Dodge());
         }
     }
@@ -163,7 +162,7 @@ public class PlayerController : MonoBehaviour
                     spriteRenderer.sprite = hurtSprite;
                     Invoke("ResetToIdle", 0.5f);
                 }
-                
+
                 // Apply knockback to the hit player
                 Vector2 knockbackDirection = (otherPlayerRb.transform.position - transform.position).normalized;
                 otherPlayerRb.AddForce(knockbackDirection * knockbackForce, ForceMode2D.Impulse);
@@ -172,8 +171,9 @@ public class PlayerController : MonoBehaviour
                 Vector2 selfKnockbackDirection = (transform.position - otherPlayerRb.transform.position).normalized;
                 rb.AddForce(selfKnockbackDirection * knockbackForce, ForceMode2D.Impulse);
 
+                // Debug visuals for knockback direction
                 Debug.DrawLine(otherPlayerRb.position, otherPlayerRb.position + knockbackDirection * knockbackForce, Color.red, 2f);
-                Debug.Log("Knockback applied to: " + player.name + " with force: " + knockbackDirection * knockbackForce);
+                Debug.Log("Knockback applied to: " + otherPlayerRb.name + " with force: " + knockbackDirection * knockbackForce);
             }
         }
 

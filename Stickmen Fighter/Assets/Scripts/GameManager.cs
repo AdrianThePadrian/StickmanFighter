@@ -73,7 +73,6 @@ public class GameManager : MonoBehaviour
         // If both players have joined, start the round
         if (player1 != null && player2 != null)
         {
-
             StartRound();
         }
     }

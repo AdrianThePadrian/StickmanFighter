@@ -44,8 +44,6 @@ public class PlayerSpawner : MonoBehaviour
     }
     private void OnPlayerJoined(PlayerInput playerInput)
     {
-        
-        ScalePlayerToCollider(playerPrefab);
         // Check player index and set their spawn position accordingly
         if (playerInput.playerIndex == 0)
         {
@@ -66,34 +64,6 @@ public class PlayerSpawner : MonoBehaviour
         PlayerHealth playerHealth = playerPrefab.GetComponent<PlayerHealth>();
         gameManager.AssignHealthBarsToPlayers(playerHealth, playerInput.playerIndex);
     }
-    private void ScalePlayerToCollider(GameObject player)
-    {
-        // Get the capsule collider component from the player
-        CapsuleCollider2D capsuleCollider = player.GetComponent<CapsuleCollider2D>();
-        SpriteRenderer spriteRenderer = player.GetComponent<SpriteRenderer>();
-
-        if (capsuleCollider != null && spriteRenderer != null)
-        {
-            // Get the radius and height of the capsule collider
-            float radius = capsuleCollider.size.x * 0.5f; // Capsule width is twice the radius
-            float height = capsuleCollider.size.y;
-
-            // Get the dimensions of the sprite in units
-            float spriteWidthInUnits = spriteRenderer.bounds.size.x; // Width of the sprite
-            float spriteHeightInUnits = spriteRenderer.bounds.size.y; // Height of the sprite
-
-            // Calculate scale factors
-            float scaleX = (2 * radius) / spriteWidthInUnits; // Scale based on the collider radius and sprite width
-            float scaleY = height / spriteHeightInUnits; // Scale based on the collider height and sprite height
-
-            // Apply scaling
-            player.transform.localScale = new Vector3(scaleX, scaleY, 1);
-        }
-        else
-        {
-            Debug.LogWarning("Player does not have a CapsuleCollider2D or SpriteRenderer component.");
-        }
-    }
 
     private void AssignPlayerSprites (GameObject player, Sprite idle, Sprite highAttack, Sprite lowAttack, Sprite hurt, Sprite victory, Sprite defeat) 
     {
@@ -106,8 +76,6 @@ public class PlayerSpawner : MonoBehaviour
             playerController.lowAttackSprite = lowAttack;
             playerController.hurtSprite = hurt;
             playerController.victorySprite = victory;
-
-            
         }
     }
 
