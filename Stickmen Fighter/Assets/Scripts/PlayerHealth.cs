@@ -15,7 +15,7 @@ public class PlayerHealth : MonoBehaviour
 
     public void Awake()
     {
-        gameManager = FindObjectOfType<GameManager>();
+        gameManager = FindFirstObjectByType<GameManager>();
         playerController = GetComponent<PlayerController>();
     }
     private void OnPlayerJoined()

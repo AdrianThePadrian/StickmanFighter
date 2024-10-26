@@ -148,6 +148,7 @@ public class GameManager : MonoBehaviour
         }
 
         countdownDisplay.text = "Fight!";
+        yield return new WaitForSeconds(1f);
 
         countdownDisplay.text = null;
 
@@ -175,6 +176,8 @@ public class GameManager : MonoBehaviour
 
     private void EndRound(int winningPlayerIndex)
     {
+        currentRound++;
+
         if (winningPlayerIndex == 0)
         {
             player1Wins++;
