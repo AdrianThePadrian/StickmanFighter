@@ -71,7 +71,7 @@ public class PlayerController : MonoBehaviour
         if (canMove)
         {
             // Handle movement input only if canMove is true
-            rb.velocity = new Vector2(moveInput.x * moveSpeed, rb.velocity.y);
+            rb.linearVelocity = new Vector2(moveInput.x * moveSpeed, rb.linearVelocity.y);
         }
     }
 
