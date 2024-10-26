@@ -21,6 +21,7 @@ public class PlayerController : MonoBehaviour
     private int playerIndex;
 
     private bool isHurt = false;
+    public bool canMove = true;
 
     // Cooldown settings
     public float highAttackCooldown = 1f; // Cooldown duration for high attack
@@ -40,8 +41,6 @@ public class PlayerController : MonoBehaviour
     public SpriteRenderer spriteRenderer;
     public PlayerHealth playerHealth;
 
-
-
     private void Awake()
     {
         spriteRenderer = GetComponent<SpriteRenderer>();
@@ -56,7 +55,7 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    private void Update()
+    private void FixedUpdate()
     {
         // Update the attack timer if not ready to attack
         if (!canAttack)
@@ -68,14 +67,25 @@ public class PlayerController : MonoBehaviour
                 Debug.Log("Player can attack again.");
             }
         }
+
+        if (canMove)
+        {
+            // Handle movement input only if canMove is true
+            rb.velocity = new Vector2(moveInput.x * moveSpeed, rb.velocity.y);
+        }
     }
-
-
 
     // This method is called by the Input System when the "Move" action is triggered
     public void OnMove(InputValue value)
     {
-        moveInput = value.Get<Vector2>();
+        if (canMove)
+        {
+            moveInput = value.Get<Vector2>();
+        }
+        else
+        {
+            moveInput = Vector2.zero; // Stop movement input if canMove is false
+        }
     }
 
     // High attack input from the new input system
@@ -83,6 +93,7 @@ public class PlayerController : MonoBehaviour
     {
         if (value.isPressed && canAttack && !isHurt)
         {
+            canMove = false;
             Debug.Log("High Attack Triggered");
             Attack(true); // true for high attack
             spriteRenderer.sprite = highAttackSprite; // Change Sprite
@@ -95,6 +106,7 @@ public class PlayerController : MonoBehaviour
     {
         if (value.isPressed && canAttack && !isHurt)
         {
+            canMove = false;
             Debug.Log("Low Attack Triggered");
             Attack(false); // false for low attack
             spriteRenderer.sprite = lowAttackSprite; // Change Sprite
@@ -111,15 +123,23 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    private void FixedUpdate()
+    public void SetVictoryPose()
     {
-        // Move the player on the X axis using the input
-        rb.velocity = new Vector2(moveInput.x * moveSpeed, rb.velocity.y);
+        spriteRenderer.sprite = victorySprite;
+        Debug.Log(gameObject.name + " has won the round!");
+    }
+
+    public void SetDefeatPose()
+    {
+        spriteRenderer.sprite = defeatSprite;
+        Debug.Log(gameObject.name + " has lost the round!");
     }
 
     // Method to handle attacking the other player
     private void Attack(bool isHighAttack)
     {
+        if (isHurt) return;
+
         Transform attackPoint = isHighAttack ? highAttackPoint : lowAttackPoint;
         float attackRange = isHighAttack ? highAttackRange : lowAttackRange;
         int damage = isHighAttack ? highAttackDamage : lowAttackDamage;
@@ -136,6 +156,7 @@ public class PlayerController : MonoBehaviour
 
             PlayerHealth playerHealth = player.GetComponent<PlayerHealth>();
             Rigidbody2D otherPlayerRb = player.GetComponent<Rigidbody2D>();
+            
 
             if (playerHealth != null && otherPlayerRb != null)
             {
@@ -144,8 +165,8 @@ public class PlayerController : MonoBehaviour
                 // Determine if it's a dodge scenario
                 if (isHighAttack)
                 {
-                    // If this is a high attack, check if the other player is dodging (low attack)
                     PlayerController otherPlayerController = player.GetComponent<PlayerController>();
+                    // If this is a high attack, check if the other player is dodging (low attack)
                     if (otherPlayerController.IsDodging())
                     {
                         Debug.Log(player.name + " dodged the high attack!");
@@ -158,6 +179,7 @@ public class PlayerController : MonoBehaviour
 
                 if (!isHurt)
                 {
+                    canMove = false;
                     isHurt = true;
                     spriteRenderer.sprite = hurtSprite;
                     Invoke("ResetToIdle", 0.5f);
@@ -185,7 +207,7 @@ public class PlayerController : MonoBehaviour
     // Method to check if the player is dodging
     public bool IsDodging()
     {
-        return false; // Placeholder, replace with actual dodge logic
+        return false;
     }
 
     // Example dodge coroutine
@@ -203,9 +225,12 @@ public class PlayerController : MonoBehaviour
 
         playerHealth.ResetHealth();
         spriteRenderer.sprite = idleSprite;
+        isHurt = false; // Reset hurt state
+        canMove = true;
     }
     void ResetToIdle()
     {
+        canMove = true;
         isHurt = false;
         spriteRenderer.sprite = idleSprite;
     }

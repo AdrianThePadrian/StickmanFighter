@@ -42,6 +42,7 @@ public class PlayerSpawner : MonoBehaviour
             Destroy(gameObject); // Prevent duplicates
         }
     }
+
     private void OnPlayerJoined(PlayerInput playerInput)
     {
         // Check player index and set their spawn position accordingly
@@ -58,7 +59,6 @@ public class PlayerSpawner : MonoBehaviour
             playerInput.transform.position = player2Spawn.position;
             AssignPlayerSprites(playerInput.gameObject, player2IdleSprite, player2HighAttackSprite, player2LowAttackSprite, player2HurtSprite, player2Victory, player2Defeat);
             playerInput.transform.rotation = Quaternion.Euler(0, 180, 0);
-
         }
 
         PlayerHealth playerHealth = playerPrefab.GetComponent<PlayerHealth>();
@@ -76,6 +76,7 @@ public class PlayerSpawner : MonoBehaviour
             playerController.lowAttackSprite = lowAttack;
             playerController.hurtSprite = hurt;
             playerController.victorySprite = victory;
+            playerController.defeatSprite = defeat;
         }
     }
 

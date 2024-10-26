@@ -7,10 +7,17 @@ using UnityEngine.UI;
 public class PlayerHealth : MonoBehaviour
 {
     public int maxHealth = 3;
-    private int currentHealth;
+    private int currentHealth = 3;
 
+    private GameManager gameManager;
+    private PlayerController playerController;
     public HealthBar healthBar;
 
+    public void Awake()
+    {
+        gameManager = FindObjectOfType<GameManager>();
+        playerController = GetComponent<PlayerController>();
+    }
     private void OnPlayerJoined()
     {
         healthBar.Initialize(maxHealth);
@@ -32,12 +39,12 @@ public class PlayerHealth : MonoBehaviour
     private void Die()
     {
         Debug.Log(gameObject.name + " has died!");
-        GameManager.instance.OnPlayerDefeated(GetComponent<PlayerController>());
+        gameManager.OnPlayerDefeated(playerController);
     }
 
     public void ResetHealth()
     {
         currentHealth = maxHealth;
-        healthBar.UpdateHealthBar(currentHealth);
+        healthBar.UpdateHealthBar(maxHealth);
     }
 }
