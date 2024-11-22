@@ -8,6 +8,14 @@
     "D:\\Unity Projects\\StickmanFighter\\Stickmen Fighter\\Packages\\packages-lock.json"
   ],
   "outputs": {
+    "com.unity.barracuda@3.0.0": {
+      "name": "com.unity.barracuda",
+      "resolvedPath": "D:\\Unity Projects\\StickmanFighter\\Stickmen Fighter\\Library\\PackageCache\\com.unity.barracuda",
+      "fingerprint": "82bcfb51cf288487e9cfe313123e22a67d1dcb68",
+      "editorCompatibility": "2019.4.0a1",
+      "version": "3.0.0",
+      "source": "registry"
+    },
     "com.unity.collab-proxy@2.5.2": {
       "name": "com.unity.collab-proxy",
       "resolvedPath": "D:\\Unity Projects\\StickmanFighter\\Stickmen Fighter\\Library\\PackageCache\\com.unity.collab-proxy",
@@ -363,6 +371,14 @@
       "version": "1.1.6",
       "source": "registry"
     },
+    "com.unity.burst@1.8.18": {
+      "name": "com.unity.burst",
+      "resolvedPath": "D:\\Unity Projects\\StickmanFighter\\Stickmen Fighter\\Library\\PackageCache\\com.unity.burst",
+      "fingerprint": "616862665d8c8ffe643d505aebb5de2ee73b0ab0",
+      "editorCompatibility": "2020.3.0a1",
+      "version": "1.8.18",
+      "source": "registry"
+    },
     "com.unity.2d.common@9.0.6": {
       "name": "com.unity.2d.common",
       "resolvedPath": "D:\\Unity Projects\\StickmanFighter\\Stickmen Fighter\\Library\\PackageCache\\com.unity.2d.common",
@@ -385,14 +401,6 @@
       "fingerprint": "56bff8827a7ef6d44fcee4f36e558a74da89c1a0",
       "editorCompatibility": "2022.3.11f1",
       "version": "2.5.1",
-      "source": "registry"
-    },
-    "com.unity.burst@1.8.18": {
-      "name": "com.unity.burst",
-      "resolvedPath": "D:\\Unity Projects\\StickmanFighter\\Stickmen Fighter\\Library\\PackageCache\\com.unity.burst",
-      "fingerprint": "616862665d8c8ffe643d505aebb5de2ee73b0ab0",
-      "editorCompatibility": "2020.3.0a1",
-      "version": "1.8.18",
       "source": "registry"
     },
     "com.unity.nuget.mono-cecil@1.11.4": {

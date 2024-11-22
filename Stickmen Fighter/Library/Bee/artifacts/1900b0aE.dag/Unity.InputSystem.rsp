@@ -381,6 +381,7 @@
 -r:"C:/Program Files/Unity/Hub/Editor/6000.0.24f1/Editor/Data/NetStandard/Extensions/2.0.0/System.Runtime.InteropServices.WindowsRuntime.dll"
 -r:"C:/Program Files/Unity/Hub/Editor/6000.0.24f1/Editor/Data/NetStandard/ref/2.1.0/netstandard.dll"
 -r:"C:/Program Files/Unity/Hub/Editor/6000.0.24f1/Editor/Data/PlaybackEngines/WindowsStandaloneSupport/UnityEditor.WindowsStandalone.Extensions.dll"
+-r:"Library/PackageCache/com.unity.barracuda/Barracuda/Runtime/Plugins/ProtoBuffer/Google.Protobuf.dll"
 -r:"Library/PackageCache/com.unity.collab-proxy/Lib/Editor/PlasticSCM/log4netPlastic.dll"
 -r:"Library/PackageCache/com.unity.collab-proxy/Lib/Editor/PlasticSCM/Unity.Plastic.Antlr3.Runtime.dll"
 -r:"Library/PackageCache/com.unity.collab-proxy/Lib/Editor/PlasticSCM/Unity.Plastic.Newtonsoft.Json.dll"
