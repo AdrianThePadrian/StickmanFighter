@@ -7,6 +7,10 @@ using UnityEngine.InputSystem;
 public class PlayerSpawner : MonoBehaviour
 {
     public GameObject playerPrefab;
+    public RuntimeAnimatorController player1AnimatorController;
+    public RuntimeAnimatorController player2AnimatorController;
+    public GameObject player1Model;
+    public GameObject player2Model;
 
     public static PlayerSpawner instance { get; private set; }
 
@@ -15,83 +19,102 @@ public class PlayerSpawner : MonoBehaviour
     public Transform player1Spawn;
     public Transform player2Spawn;
 
-    // Player 1's sprites
-    public Sprite player1IdleSprite;
-    public Sprite player1HighAttackSprite;
-    public Sprite player1LowAttackSprite;
-    public Sprite player1HurtSprite;
-    public Sprite player1Victory;
-    public Sprite player1Defeat;
-
-    // Player 2's sprites
-    public Sprite player2IdleSprite;
-    public Sprite player2HighAttackSprite;
-    public Sprite player2LowAttackSprite;
-    public Sprite player2HurtSprite;
-    public Sprite player2Victory;
-    public Sprite player2Defeat;
+    private HashSet<int> joinedPlayers = new HashSet<int>();
+    private const int MAX_PLAYERS = 2;
 
     private void Awake()
     {
         if (instance == null)
         {
             instance = this;
+            PlayerInput[] existingPlayers = FindObjectsOfType<PlayerInput>();
+            foreach (PlayerInput player in existingPlayers)
+            {
+                Destroy(player.gameObject);
+            }
+            joinedPlayers.Clear();
         }
         else
         {
-            Destroy(gameObject); // Prevent duplicates
+            Destroy(gameObject);
         }
+    }
+
+    private void OnDestroy()
+    {
+        // Remove the event unsubscribe since we're using SendMessages
     }
 
     private void OnPlayerJoined(PlayerInput playerInput)
     {
-        // Check player index and set their spawn position accordingly
+        if (joinedPlayers.Contains(playerInput.playerIndex))
+        {
+            Debug.LogWarning($"Player {playerInput.playerIndex} already exists!");
+            Destroy(playerInput.gameObject);
+            return;
+        }
+
+        if (joinedPlayers.Count >= MAX_PLAYERS)
+        {
+            Debug.LogWarning("Maximum players reached!");
+            Destroy(playerInput.gameObject);
+            return;
+        }
+
+        joinedPlayers.Add(playerInput.playerIndex);
+        
+        GameObject player = playerInput.gameObject;
+        playerInput.notificationBehavior = PlayerNotifications.SendMessages;
+        
+        Transform spawnPoint = GetSpawnPoint(playerInput.playerIndex);
+        if (spawnPoint != null)
+        {
+            player.transform.position = spawnPoint.position;
+            player.transform.rotation = playerInput.playerIndex == 0 ? 
+                Quaternion.identity : Quaternion.Euler(0, 180, 0);
+        }
+
         if (playerInput.playerIndex == 0)
         {
-            // Player 1
-            playerInput.transform.position = player1Spawn.position;
-            AssignPlayerSprites(playerInput.gameObject, player1IdleSprite, player1HighAttackSprite, player1LowAttackSprite, player1HurtSprite, player1Victory, player1Defeat);
-            playerInput.transform.rotation = Quaternion.identity;
+            SetupPlayerModel(player, player1Model, player1AnimatorController);
         }
         else if (playerInput.playerIndex == 1)
         {
-            // Player 2
-            playerInput.transform.position = player2Spawn.position;
-            AssignPlayerSprites(playerInput.gameObject, player2IdleSprite, player2HighAttackSprite, player2LowAttackSprite, player2HurtSprite, player2Victory, player2Defeat);
-            playerInput.transform.rotation = Quaternion.Euler(0, 180, 0);
+            SetupPlayerModel(player, player2Model, player2AnimatorController);
         }
 
-        PlayerHealth playerHealth = playerPrefab.GetComponent<PlayerHealth>();
+        PlayerHealth playerHealth = player.GetComponent<PlayerHealth>();
         gameManager.AssignHealthBarsToPlayers(playerHealth, playerInput.playerIndex);
     }
 
-    private void AssignPlayerSprites (GameObject player, Sprite idle, Sprite highAttack, Sprite lowAttack, Sprite hurt, Sprite victory, Sprite defeat) 
+    private void SetupPlayerModel(GameObject player, GameObject modelPrefab, RuntimeAnimatorController animatorController)
     {
-        PlayerController playerController = player.GetComponent<PlayerController>();
-        PlayerHealth playerHealth = player.GetComponent<PlayerHealth>();
-        if (playerController != null)
+        Transform existingModel = player.transform.Find("PlayerModel");
+        if (existingModel != null)
         {
-            playerController.idleSprite = idle;
-            playerController.highAttackSprite = highAttack;
-            playerController.lowAttackSprite = lowAttack;
-            playerController.hurtSprite = hurt;
-            playerController.victorySprite = victory;
-            playerController.defeatSprite = defeat;
+            Destroy(existingModel.gameObject);
+        }
+
+        GameObject newModel = Instantiate(modelPrefab, player.transform);
+        newModel.name = "PlayerModel";
+
+        Animator animator = newModel.GetComponent<Animator>();
+        if (animator == null)
+        {
+            animator = newModel.AddComponent<Animator>();
+        }
+        animator.runtimeAnimatorController = animatorController;
+
+        PlayerController controller = player.GetComponent<PlayerController>();
+        if (controller != null)
+        {
+            controller.InitializeModel(newModel);
         }
     }
 
     public Transform GetSpawnPoint(int playerIndex)
     {
-        if (playerIndex == 0)
-        {
-            return player1Spawn;
-        }
-        else if (playerIndex == 1)
-        {
-            return player2Spawn;
-        }
-
-        return null;
+        return playerIndex == 0 ? player1Spawn : player2Spawn;
     }
 
 }

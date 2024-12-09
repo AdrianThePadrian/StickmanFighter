@@ -7,135 +7,132 @@ using static UnityEditor.Experimental.GraphView.GraphView;
 
 public class PlayerController : MonoBehaviour
 {
-    private Vector2 moveInput;
-    private Rigidbody2D rb;  //Rigidbody component
-    public float moveSpeed = 5f;  //Movement Speed
-    public int highAttackDamage = 1;  // Damage dealt by the high attack
-    public int lowAttackDamage = 1;   // Damage dealt by the low attack
-    public Transform highAttackPoint;   // Point from where the high attack will be cast
-    public Transform lowAttackPoint;    // Point from where the low attack will be cast
-    public float highAttackRange = 1f;  // Range of the high attack
-    public float lowAttackRange = 0.5f; // Range of the low attack
-    public LayerMask playerLayer;       // Layer for detecting the other player
-    public float knockbackForce = 5f;   // Knockback force applied when hit
-    private int playerIndex;
+    [Header("Components")]
+    private Rigidbody rb;  // Change to 3D Rigidbody
+    private Animator animator;
+    private PlayerAnimationController animController;
+    public PlayerHealth playerHealth;
+    private PlayerInput playerInput;
 
-    private bool isHurt = false;
+    [Header("Input Actions")]
+    private InputAction moveAction;
+    private InputAction highAttackAction;
+    private InputAction lowAttackAction;
+
+    [Header("Movement")]
+    public float moveSpeed = 5f;
+    private Vector2 moveInput;
     public bool canMove = true;
 
-    // Cooldown settings
-    public float highAttackCooldown = 1f; // Cooldown duration for high attack
-    public float lowAttackCooldown = 0.5f; // Cooldown duration for low attack
+    [Header("Combat")]
+    public int highAttackDamage = 1;
+    public int lowAttackDamage = 1;
+    public Transform highAttackPoint;
+    public Transform lowAttackPoint;
+    public float highAttackRange = 1f;
+    public float lowAttackRange = 0.5f;
+    public LayerMask playerLayer;
+    public float knockbackForce = 5f;
+    public float highAttackCooldown = 1f;
+    public float lowAttackCooldown = 0.5f;
 
-    private bool canAttack = true; // Track if player can attack
-    private float attackTimer; // Timer to track cooldown
+    private bool canAttack = true;
+    private float attackTimer;
+    private bool isHurt = false;
+    private int playerIndex;
 
-    //Sprites
-    public Sprite idleSprite;
-    public Sprite highAttackSprite;
-    public Sprite lowAttackSprite;
-    public Sprite hurtSprite;
-    public Sprite victorySprite;
-    public Sprite defeatSprite;
-
-    public SpriteRenderer spriteRenderer;
-    public PlayerHealth playerHealth;
+    [Header("Model")]
+    private GameObject playerModel;
+    public Transform modelRoot; // Reference to the root of the character model
 
     private void Awake()
     {
-        spriteRenderer = GetComponent<SpriteRenderer>();
+        // Get components
+        rb = GetComponent<Rigidbody>();
+        animator = GetComponent<Animator>();
+        animController = GetComponent<PlayerAnimationController>();
         playerHealth = GetComponent<PlayerHealth>();
-        playerIndex = GetComponent<PlayerInput>().playerIndex;
-        spriteRenderer.sprite = idleSprite; // Set initial sprite to idle
-        rb = GetComponent<Rigidbody2D>();
+        playerInput = GetComponent<PlayerInput>();
+        playerIndex = playerInput.playerIndex;
 
-        if (playerHealth == null)
+        if (playerHealth == null || animController == null)
         {
-            Debug.LogError("PlayerHealth component is missing on " + gameObject.name);
+            Debug.LogError("Required components missing on " + gameObject.name);
+        }
+
+        // Configure Rigidbody
+        rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
+        rb.interpolation = RigidbodyInterpolation.Interpolate;
+        rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
+    }
+
+    public void OnMove(InputValue value)
+    {
+        moveInput = value.Get<Vector2>();
+    }
+
+    public void OnHighAttack(InputValue value)
+    {
+        if (canAttack && !isHurt)
+        {
+            canMove = false;
+            Attack(true);
+            animController.PlayHighAttack();
+            StartCoroutine(ResetMoveAfterDelay(0.5f));
+        }
+    }
+
+    public void OnLowAttack(InputValue value)
+    {
+        if (canAttack && !isHurt)
+        {
+            canMove = false;
+            Attack(false);
+            animController.PlayLowAttack();
+            StartCoroutine(ResetMoveAfterDelay(0.5f));
         }
     }
 
     private void FixedUpdate()
     {
-        // Update the attack timer if not ready to attack
         if (!canAttack)
         {
             attackTimer -= Time.deltaTime;
             if (attackTimer <= 0)
             {
                 canAttack = true;
-                Debug.Log("Player can attack again.");
             }
         }
 
         if (canMove)
         {
-            // Handle movement input only if canMove is true
-            rb.linearVelocity = new Vector2(moveInput.x * moveSpeed, rb.linearVelocity.y);
+            Vector3 movement = new Vector3(moveInput.x, 0, moveInput.y) * moveSpeed;
+            rb.linearVelocity = new Vector3(movement.x, rb.linearVelocity.y, movement.z);
+            
+            // Rotate character to face movement direction
+            if (movement != Vector3.zero)
+            {
+                transform.rotation = Quaternion.LookRotation(movement);
+                animController.SetMoving(true);
+            }
+            else
+            {
+                animController.SetMoving(false);
+            }
         }
     }
 
-    // This method is called by the Input System when the "Move" action is triggered
-    public void OnMove(InputValue value)
+    private IEnumerator ResetMoveAfterDelay(float delay)
     {
-        if (canMove)
-        {
-            moveInput = value.Get<Vector2>();
-        }
-        else
-        {
-            moveInput = Vector2.zero; // Stop movement input if canMove is false
-        }
+        yield return new WaitForSeconds(delay);
+        canMove = true;
     }
 
-    // High attack input from the new input system
-    public void OnHighAttack(InputValue value)
+    public bool IsDodging()
     {
-        if (value.isPressed && canAttack && !isHurt)
-        {
-            canMove = false;
-            Debug.Log("High Attack Triggered");
-            Attack(true); // true for high attack
-            spriteRenderer.sprite = highAttackSprite; // Change Sprite
-            Invoke("ResetToIdle", 0.5f); // Reset Sprite
-        }
+        return animator.GetCurrentAnimatorStateInfo(0).IsName("LowAttack");
     }
 
-    // Low attack input from the new input system
-    public void OnLowAttack(InputValue value)
-    {
-        if (value.isPressed && canAttack && !isHurt)
-        {
-            canMove = false;
-            Debug.Log("Low Attack Triggered");
-            Attack(false); // false for low attack
-            spriteRenderer.sprite = lowAttackSprite; // Change Sprite
-            Invoke("ResetToIdle", 0.5f); // Reset Sprite
-        }
-    }
-
-    // This method is called by the Input System when the "Dodge" action is triggered
-    public void OnDodge(InputValue value)
-    {
-        if (value.isPressed)
-        {
-            StartCoroutine(Dodge());
-        }
-    }
-
-    public void SetVictoryPose()
-    {
-        spriteRenderer.sprite = victorySprite;
-        Debug.Log(gameObject.name + " has won the round!");
-    }
-
-    public void SetDefeatPose()
-    {
-        spriteRenderer.sprite = defeatSprite;
-        Debug.Log(gameObject.name + " has lost the round!");
-    }
-
-    // Method to handle attacking the other player
     private void Attack(bool isHighAttack)
     {
         if (isHurt) return;
@@ -144,109 +141,82 @@ public class PlayerController : MonoBehaviour
         float attackRange = isHighAttack ? highAttackRange : lowAttackRange;
         int damage = isHighAttack ? highAttackDamage : lowAttackDamage;
 
-        // Detect players in range of the attack
-        Collider2D[] hitPlayers = Physics2D.OverlapCircleAll(attackPoint.position, attackRange, playerLayer);
+        Collider[] hitPlayers = Physics.OverlapSphere(attackPoint.position, attackRange, playerLayer);
 
-        Debug.Log($"Attack Point: {attackPoint.position}, Attack Range: {attackRange}, Hit Players: {hitPlayers.Length}");
-
-        // Damage and knockback each player hit
-        foreach (Collider2D player in hitPlayers)
+        foreach (Collider player in hitPlayers)
         {
-            Debug.Log("Hit Player: " + player.name); // Log the hit player
-
-            PlayerHealth playerHealth = player.GetComponent<PlayerHealth>();
-            Rigidbody2D otherPlayerRb = player.GetComponent<Rigidbody2D>();
-            
-
-            if (playerHealth != null && otherPlayerRb != null)
+            if (player.gameObject != gameObject)
             {
-                Debug.Log($"Applying {damage} damage to {player.name}");
-
-                // Determine if it's a dodge scenario
-                if (isHighAttack)
+                PlayerHealth enemyHealth = player.GetComponent<PlayerHealth>();
+                if (enemyHealth != null)
                 {
-                    PlayerController otherPlayerController = player.GetComponent<PlayerController>();
-                    // If this is a high attack, check if the other player is dodging (low attack)
-                    if (otherPlayerController.IsDodging())
+                    enemyHealth.TakeDamage(damage);
+                    
+                    // Add knockback
+                    Rigidbody enemyRb = player.GetComponent<Rigidbody>();
+                    if (enemyRb != null)
                     {
-                        Debug.Log(player.name + " dodged the high attack!");
-                        return; // The attack misses due to dodge
+                        Vector3 knockbackDirection = (player.transform.position - transform.position).normalized;
+                        enemyRb.AddForce(knockbackDirection * knockbackForce, ForceMode.Impulse);
                     }
                 }
-
-                // Apply damage to the player
-                playerHealth.TakeDamage(damage);
-
-                if (!isHurt)
-                {
-                    canMove = false;
-                    isHurt = true;
-                    spriteRenderer.sprite = hurtSprite;
-                    Invoke("ResetToIdle", 0.5f);
-                }
-
-                // Apply knockback to the hit player
-                Vector2 knockbackDirection = (otherPlayerRb.transform.position - transform.position).normalized;
-                otherPlayerRb.AddForce(knockbackDirection * knockbackForce, ForceMode2D.Impulse);
-
-                // Apply knockback to the attacker (this player)
-                Vector2 selfKnockbackDirection = (transform.position - otherPlayerRb.transform.position).normalized;
-                rb.AddForce(selfKnockbackDirection * knockbackForce, ForceMode2D.Impulse);
-
-                // Debug visuals for knockback direction
-                Debug.DrawLine(otherPlayerRb.position, otherPlayerRb.position + knockbackDirection * knockbackForce, Color.red, 2f);
-                Debug.Log("Knockback applied to: " + otherPlayerRb.name + " with force: " + knockbackDirection * knockbackForce);
             }
         }
 
-        // Set attack cooldown
+        attackTimer = isHighAttack ? highAttackCooldown : lowAttackCooldown;
         canAttack = false;
-        attackTimer = isHighAttack ? highAttackCooldown : lowAttackCooldown; // Set cooldown duration based on attack type
     }
 
-    // Method to check if the player is dodging
-    public bool IsDodging()
+    public void SetVictoryPose()
     {
-        return false;
+        animController.TriggerVictory();
     }
 
-    // Example dodge coroutine
-    private IEnumerator Dodge()
+    public void SetDefeatPose()
     {
-        yield return new WaitForSeconds(0.5f); // Duration of the dodge
+        animController.TriggerDefeat();
     }
+
     public void ResetPlayer()
     {
+        canMove = true;
+        canAttack = true;
+        isHurt = false;
+        attackTimer = 0;
+        
         Transform spawnPoint = PlayerSpawner.instance.GetSpawnPoint(playerIndex);
-        if(spawnPoint != null) 
+        if (spawnPoint != null)
         {
             transform.position = spawnPoint.position;
+            transform.rotation = playerIndex == 0 ? Quaternion.identity : Quaternion.Euler(0, 180, 0);
         }
-
-        playerHealth.ResetHealth();
-        spriteRenderer.sprite = idleSprite;
-        isHurt = false; // Reset hurt state
-        canMove = true;
-    }
-    void ResetToIdle()
-    {
-        canMove = true;
-        isHurt = false;
-        spriteRenderer.sprite = idleSprite;
     }
 
-    // Draw the attack range in the editor for visualization
-    private void OnDrawGizmosSelected()
+    // Add this method to initialize the model
+    public void InitializeModel(GameObject model)
     {
-        if (highAttackPoint != null)
+        playerModel = model;
+        modelRoot = model.transform;
+        
+        // Update attack points to use the new model's transforms if needed
+        Transform attackPointsParent = modelRoot.Find("AttackPoints");
+        if (attackPointsParent != null)
         {
-            Gizmos.color = Color.red;
-            Gizmos.DrawWireSphere(highAttackPoint.position, highAttackRange);
+            highAttackPoint = attackPointsParent.Find("HighAttackPoint");
+            lowAttackPoint = attackPointsParent.Find("LowAttackPoint");
         }
-        if (lowAttackPoint != null)
+
+        // Get animator from the model if it exists there
+        animator = model.GetComponent<Animator>();
+        if (animator == null)
         {
-            Gizmos.color = Color.blue;
-            Gizmos.DrawWireSphere(lowAttackPoint.position, lowAttackRange);
+            animator = model.AddComponent<Animator>();
+        }
+        
+        // Ensure AnimationController is updated with the new animator
+        if (animController != null)
+        {
+            StartCoroutine(animController.InitializeAnimator());
         }
     }
 }

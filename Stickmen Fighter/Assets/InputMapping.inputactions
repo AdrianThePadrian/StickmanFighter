@@ -18,7 +18,7 @@
                     "name": "LowAttack",
                     "type": "Button",
                     "id": "ba70b09d-2164-4098-8ca4-89ec031195b4",
-                    "expectedControlType": "Button",
+                    "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
@@ -27,7 +27,7 @@
                     "name": "HighAttack",
                     "type": "Button",
                     "id": "be04c2e9-242c-4f04-9534-8c49ac838465",
-                    "expectedControlType": "Button",
+                    "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
