@@ -1,32 +1,52 @@
 using System.Collections;
 using System.Collections.Generic;
-using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.Users;
+using UnityEditor;
 
 public class PlayerSpawner : MonoBehaviour
 {
-    public GameObject playerPrefab;
-    public RuntimeAnimatorController player1AnimatorController;
-    public RuntimeAnimatorController player2AnimatorController;
-    public GameObject player1Model;
-    public GameObject player2Model;
-
     public static PlayerSpawner instance { get; private set; }
 
-    public GameManager gameManager;
+    [Header("Player Setup")]
+    public GameObject playerPrefab;    // Your 3D model prefab with all components
+    public RuntimeAnimatorController player1AnimatorController;
+    public RuntimeAnimatorController player2AnimatorController;
+    public BasicPlayerAnimatorSetup basicAnimatorSetup;
 
+    [Header("References")]
+    public GameManager gameManager;
     public Transform player1Spawn;
     public Transform player2Spawn;
 
     private HashSet<int> joinedPlayers = new HashSet<int>();
     private const int MAX_PLAYERS = 2;
 
+    private PlayerInputManager inputManager;
+    [SerializeField] private InputActionAsset inputActions;
+
+    public bool useOverrideAnimations = false;  // Add this at the class level
+
     private void Awake()
     {
         if (instance == null)
         {
             instance = this;
+            
+            inputManager = FindObjectOfType<PlayerInputManager>();
+            if (inputManager == null)
+            {
+                inputManager = gameObject.AddComponent<PlayerInputManager>();
+            }
+            
+            // Configure input manager
+            inputManager.joinBehavior = PlayerJoinBehavior.JoinPlayersWhenButtonIsPressed;
+            inputManager.playerPrefab = playerPrefab;
+            inputManager.enabled = true;
+            inputManager.splitScreen = false;
+            
+            // Clear existing players
             PlayerInput[] existingPlayers = FindObjectsOfType<PlayerInput>();
             foreach (PlayerInput player in existingPlayers)
             {
@@ -40,81 +60,146 @@ public class PlayerSpawner : MonoBehaviour
         }
     }
 
-    private void OnDestroy()
+    public void OnPlayerJoined(PlayerInput playerInput)
     {
-        // Remove the event unsubscribe since we're using SendMessages
-    }
-
-    private void OnPlayerJoined(PlayerInput playerInput)
-    {
-        if (joinedPlayers.Contains(playerInput.playerIndex))
+        if (player1Spawn == null || player2Spawn == null)
         {
-            Debug.LogWarning($"Player {playerInput.playerIndex} already exists!");
-            Destroy(playerInput.gameObject);
+            Debug.LogError("Spawn points not set in PlayerSpawner!");
             return;
         }
 
-        if (joinedPlayers.Count >= MAX_PLAYERS)
+        Debug.Log($"Player {playerInput.playerIndex} attempting to join.");
+
+        // Validate player join
+        if (playerInput.playerIndex < 0 || joinedPlayers.Count >= MAX_PLAYERS || 
+            joinedPlayers.Contains(playerInput.playerIndex))
         {
-            Debug.LogWarning("Maximum players reached!");
+            Debug.LogWarning($"Invalid join attempt for player {playerInput.playerIndex}. Destroying player.");
             Destroy(playerInput.gameObject);
             return;
         }
 
         joinedPlayers.Add(playerInput.playerIndex);
-        
-        GameObject player = playerInput.gameObject;
-        playerInput.notificationBehavior = PlayerNotifications.SendMessages;
-        
+        Debug.Log($"Player {playerInput.playerIndex} successfully joined.");
+
+        // Lock position until game starts
+        Rigidbody rb = playerInput.GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            rb.isKinematic = true;
+        }
+
+        // Setup components
+        SetupPlayer(playerInput.gameObject);
+
+        // Set position
         Transform spawnPoint = GetSpawnPoint(playerInput.playerIndex);
-        if (spawnPoint != null)
-        {
-            player.transform.position = spawnPoint.position;
-            player.transform.rotation = playerInput.playerIndex == 0 ? 
-                Quaternion.identity : Quaternion.Euler(0, 180, 0);
-        }
+        playerInput.gameObject.transform.position = spawnPoint.position;
+        playerInput.gameObject.transform.rotation = playerInput.playerIndex == 0 ? 
+            Quaternion.Euler(0, 90, 0) : 
+            Quaternion.Euler(0, -90, 0);
 
-        if (playerInput.playerIndex == 0)
-        {
-            SetupPlayerModel(player, player1Model, player1AnimatorController);
-        }
-        else if (playerInput.playerIndex == 1)
-        {
-            SetupPlayerModel(player, player2Model, player2AnimatorController);
-        }
+        // Verify position was set
+        Debug.Log($"Player {playerInput.playerIndex} actual position after spawn: {playerInput.transform.position}");
 
-        PlayerHealth playerHealth = player.GetComponent<PlayerHealth>();
+        // Setup health
+        PlayerHealth playerHealth = playerInput.gameObject.GetComponent<PlayerHealth>();
+        if (playerHealth == null)
+        {
+            playerHealth = playerInput.gameObject.AddComponent<PlayerHealth>();
+        }
         gameManager.AssignHealthBarsToPlayers(playerHealth, playerInput.playerIndex);
     }
 
-    private void SetupPlayerModel(GameObject player, GameObject modelPrefab, RuntimeAnimatorController animatorController)
+    private void SetupPlayer(GameObject player)
+{
+    PlayerInput playerInput = player.GetComponent<PlayerInput>();
+    Animator animator = player.GetComponent<Animator>();
+    
+    if (animator != null)
     {
-        Transform existingModel = player.transform.Find("PlayerModel");
-        if (existingModel != null)
-        {
-            Destroy(existingModel.gameObject);
-        }
+        // Setup base animator controller
+        animator.runtimeAnimatorController = playerInput.playerIndex == 0 ? 
+            player1AnimatorController : player2AnimatorController;
+            
+        // Setup custom animations
+        SetupPlayerAnimations(animator, playerInput.playerIndex);
+    }
 
-        GameObject newModel = Instantiate(modelPrefab, player.transform);
-        newModel.name = "PlayerModel";
-
-        Animator animator = newModel.GetComponent<Animator>();
-        if (animator == null)
+        Rigidbody rb = player.GetComponent<Rigidbody>();
+        if (rb != null)
         {
-            animator = newModel.AddComponent<Animator>();
-        }
-        animator.runtimeAnimatorController = animatorController;
-
-        PlayerController controller = player.GetComponent<PlayerController>();
-        if (controller != null)
-        {
-            controller.InitializeModel(newModel);
+            rb.constraints = RigidbodyConstraints.FreezeRotationX | 
+                           RigidbodyConstraints.FreezeRotationZ | 
+                           RigidbodyConstraints.FreezePositionY;
+            rb.interpolation = RigidbodyInterpolation.Interpolate;
+            rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
+            rb.useGravity = false;
         }
     }
 
     public Transform GetSpawnPoint(int playerIndex)
     {
-        return playerIndex == 0 ? player1Spawn : player2Spawn;
+        Debug.Log($"Getting spawn point for player {playerIndex}");
+        Transform spawnPoint = playerIndex == 0 ? player1Spawn : player2Spawn;
+        Debug.Log($"Spawn point position: {spawnPoint.position}");
+        return spawnPoint;
     }
 
+    public void SetupPlayerAnimations(Animator animator, int playerIndex)
+    {
+        if (!useOverrideAnimations)
+        {
+            // Simply use base animations
+            animator.runtimeAnimatorController = playerIndex == 0 ? player1AnimatorController : player2AnimatorController;
+            Debug.Log($"Using base animations for Player {playerIndex + 1}");
+            return;
+        }
+
+        RuntimeAnimatorController baseController = playerIndex == 0 ? player1AnimatorController : player2AnimatorController;
+        if (baseController == null)
+        {
+            Debug.LogError($"No base animator controller assigned for Player {playerIndex + 1}");
+            return;
+        }
+
+        AnimatorOverrideController overrideController = new AnimatorOverrideController(baseController);
+        
+        // Get all the clips from the base controller
+        var baseClips = baseController.animationClips;
+        foreach (var clip in baseClips)
+        {
+            Debug.Log($"Base animation clip found: {clip.name}");
+        }
+
+        // These animations will be loaded from custom recordings
+        string[] customAnimationNames = { "HighAttack", "LowAttack", "Victory" };
+        
+        // Load and override only the custom animations
+        string playerPrefix = playerIndex == 0 ? "P1" : "P2";
+        
+        foreach (string animName in customAnimationNames)
+        {
+            string path = $"Animations/{playerPrefix}/{animName}";
+            Debug.Log($"Attempting to load custom animation from: {path}");
+            AnimationClip customAnim = Resources.Load<AnimationClip>(path);
+            
+            if (customAnim != null)
+            {
+                // Find the matching base animation to override
+                var baseClip = System.Array.Find(baseClips, clip => clip.name == animName);
+                if (baseClip != null)
+                {
+                    overrideController[baseClip.name] = customAnim;
+                    Debug.Log($"Successfully overrode {animName} animation for Player {playerIndex + 1}");
+                }
+            }
+            else
+            {
+                Debug.LogWarning($"Could not load {animName} animation for Player {playerIndex + 1} from path: {path}");
+            }
+        }
+
+        animator.runtimeAnimatorController = overrideController;
+    }
 }

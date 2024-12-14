@@ -224,9 +224,10 @@ namespace PoseAI
             try
             {
                 JsonUtility.FromJsonOverwrite(jsonString, this);
-            } catch (Exception ex)
+            }
+            catch (Exception)
             {
-                return false;
+                // Handle exception or remove the catch block if not needed
             }
 
             if (!string.IsNullOrEmpty(sessionUUID))

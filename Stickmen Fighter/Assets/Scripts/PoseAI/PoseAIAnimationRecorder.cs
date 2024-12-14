@@ -1,123 +1,44 @@
 using UnityEngine;
 using System.Collections.Generic;
+using System.Linq;  
+using PoseAI;
 
 public class PoseAIAnimationRecorder : MonoBehaviour
 {
     private AnimationClip currentRecording;
-    private Animator targetAnimator;
+    public Animator targetAnimator;
+    private PoseAICharacterAnimator poseAIAnimator;
     private bool isRecording = false;
     private float recordingStartTime;
+    private bool shouldRecordFrame = false;
 
-    // List of properties we want to record
     private readonly string[] propertiesToRecord = new string[]
     {
-        // Add the specific properties you want to record from PoseAI
-        // These will depend on your PoseAI setup and the bones/transforms you're tracking
-        "localPosition.x",
-        "localPosition.y",
-        "localPosition.z",
-        "localRotation.x",
-        "localRotation.y",
-        "localRotation.z",
-        "localRotation.w"
+        "m_LocalPosition.x",
+        "m_LocalPosition.y",
+        "m_LocalPosition.z",
+        "m_LocalRotation.x",
+        "m_LocalRotation.y",
+        "m_LocalRotation.z",
+        "m_LocalRotation.w"
     };
 
     private Dictionary<string, AnimationCurve> curveDictionary = new Dictionary<string, AnimationCurve>();
+    private Dictionary<string, AnimationClip> recordings = new Dictionary<string, AnimationClip>();
 
-    public void StartRecording(Animator animator)
+    public void StartRecording(Animator animator, string animationName)
     {
         if (isRecording) return;
 
         targetAnimator = animator;
+        poseAIAnimator = animator.GetComponent<PoseAICharacterAnimator>();
+        
         currentRecording = new AnimationClip();
-        currentRecording.name = "PoseAI_Recording";
-
-        // Set to legacy for runtime animation creation
-        currentRecording.legacy = true;
-
+        currentRecording.name = animationName;
+        curveDictionary.Clear();
         recordingStartTime = Time.time;
         isRecording = true;
-    }
-
-    private void Update()
-    {
-        if (!isRecording || targetAnimator == null) return;
-
-        float currentTime = Time.time - recordingStartTime;
-
-        // Record transform data for each bone in the animator's hierarchy
-        RecordTransformHierarchy(targetAnimator.transform, currentTime);
-    }
-
-    private void RecordTransformHierarchy(Transform transform, float time)
-    {
-        // Record this transform's data
-        string path = GetRelativePath(transform, targetAnimator.transform);
-
-        foreach (string property in propertiesToRecord)
-        {
-            switch (property)
-            {
-                case "localPosition.x":
-                    AddKeyframe(path + ".localPosition.x", time, transform.localPosition.x);
-                    break;
-                case "localPosition.y":
-                    AddKeyframe(path + ".localPosition.y", time, transform.localPosition.y);
-                    break;
-                case "localPosition.z":
-                    AddKeyframe(path + ".localPosition.z", time, transform.localPosition.z);
-                    break;
-                case "localRotation.x":
-                    AddKeyframe(path + ".localRotation.x", time, transform.localRotation.x);
-                    break;
-                case "localRotation.y":
-                    AddKeyframe(path + ".localRotation.y", time, transform.localRotation.y);
-                    break;
-                case "localRotation.z":
-                    AddKeyframe(path + ".localRotation.z", time, transform.localRotation.z);
-                    break;
-                case "localRotation.w":
-                    AddKeyframe(path + ".localRotation.w", time, transform.localRotation.w);
-                    break;
-            }
-        }
-
-        // Recursively record all children
-        foreach (Transform child in transform)
-        {
-            RecordTransformHierarchy(child, time);
-        }
-    }
-
-    private string GetRelativePath(Transform target, Transform root)
-    {
-        if (target == root) return "";
-
-        if (target.parent == root)
-            return target.name;
-
-        return GetRelativePath(target.parent, root) + "/" + target.name;
-    }
-
-    private void AddKeyframe(string propertyPath, float time, float value)
-    {
-        Keyframe keyframe = new Keyframe(time, value);
-        AnimationCurve curve;
-
-        // Check if the curve already exists in the dictionary
-        if (curveDictionary.TryGetValue(propertyPath, out curve))
-        {
-            curve.AddKey(keyframe);
-        }
-        else
-        {
-            // Create a new curve if it doesn't exist
-            curve = new AnimationCurve(keyframe);
-            curveDictionary[propertyPath] = curve;
-        }
-
-        // Set the curve in the animation clip
-        currentRecording.SetCurve("", typeof(Transform), propertyPath, curve);
+        Debug.Log($"Started recording animation: {animationName}");
     }
 
     public void StopRecording()
@@ -125,92 +46,215 @@ public class PoseAIAnimationRecorder : MonoBehaviour
         if (!isRecording) return;
 
         isRecording = false;
-        targetAnimator = null;
+        if (currentRecording != null)
+        {
+            // Set animation settings
+            currentRecording.legacy = false;
+            currentRecording.wrapMode = WrapMode.Once;
+
+            // Group curves by path and property
+            var groupedCurves = new Dictionary<string, Dictionary<string, AnimationCurve>>();
+            
+            foreach (var kvp in curveDictionary)
+            {
+                string[] parts = kvp.Key.Split('.');
+                string path = parts[0];
+                string property = string.Join(".", parts.Skip(1));
+                
+                if (!groupedCurves.ContainsKey(path))
+                    groupedCurves[path] = new Dictionary<string, AnimationCurve>();
+                    
+                groupedCurves[path][property] = kvp.Value;
+            }
+
+            // Set curves properly grouped by transform
+            foreach (var pathGroup in groupedCurves)
+            {
+                string path = pathGroup.Key;
+                var curves = pathGroup.Value;
+
+                // Set position curves
+                if (curves.ContainsKey("m_LocalPosition.x") &&
+                    curves.ContainsKey("m_LocalPosition.y") &&
+                    curves.ContainsKey("m_LocalPosition.z"))
+                {
+                    currentRecording.SetCurve(path, typeof(Transform), "localPosition.x", curves["m_LocalPosition.x"]);
+                    currentRecording.SetCurve(path, typeof(Transform), "localPosition.y", curves["m_LocalPosition.y"]);
+                    currentRecording.SetCurve(path, typeof(Transform), "localPosition.z", curves["m_LocalPosition.z"]);
+                }
+
+                // Set rotation curves
+                if (curves.ContainsKey("m_LocalRotation.x") &&
+                    curves.ContainsKey("m_LocalRotation.y") &&
+                    curves.ContainsKey("m_LocalRotation.z") &&
+                    curves.ContainsKey("m_LocalRotation.w"))
+                {
+                    currentRecording.SetCurve(path, typeof(Transform), "localRotation.x", curves["m_LocalRotation.x"]);
+                    currentRecording.SetCurve(path, typeof(Transform), "localRotation.y", curves["m_LocalRotation.y"]);
+                    currentRecording.SetCurve(path, typeof(Transform), "localRotation.z", curves["m_LocalRotation.z"]);
+                    currentRecording.SetCurve(path, typeof(Transform), "localRotation.w", curves["m_LocalRotation.w"]);
+                }
+            }
+
+            recordings[currentRecording.name] = currentRecording;
+            Debug.Log($"Stopped recording animation: {currentRecording.name}");
+        }
     }
 
-    public void SaveRecording(string animationName)
+    private void LateUpdate()
     {
-        if (currentRecording == null) return;
-
-#if UNITY_EDITOR
-        // Define the path where the animation will be saved
-        string directory = "Assets/Animations/Recorded";
-        string path = $"{directory}/{animationName}.anim";
-
-        // Ensure the directory exists
-        if (!System.IO.Directory.Exists(directory))
+        if (shouldRecordFrame)
         {
-            System.IO.Directory.CreateDirectory(directory);
+            float currentTime = Time.time - recordingStartTime;
+            RecordTransformHierarchy(targetAnimator.transform, currentTime);
+            shouldRecordFrame = false;
         }
-
-        // Save the animation clip as an asset
-        UnityEditor.AssetDatabase.CreateAsset(currentRecording, path);
-        UnityEditor.AssetDatabase.SaveAssets();
-        Debug.Log($"Animation saved as: {path}");
-#endif
     }
 
-    public void PreviewRecording()
+    public void OnAnimatorIK()
     {
-        if (currentRecording == null || targetAnimator == null) return;
-
-        // Create a temporary animation clip for preview
-        AnimationClip previewClip = new AnimationClip();
-        foreach (var kvp in curveDictionary)
+        if (isRecording && targetAnimator != null)
         {
-            previewClip.SetCurve("", typeof(Transform), kvp.Key, kvp.Value);
+            shouldRecordFrame = true;
         }
-
-        // Create a temporary AnimatorOverrideController to apply the clip
-        AnimatorOverrideController overrideController = new AnimatorOverrideController(targetAnimator.runtimeAnimatorController);
-
-        // Ensure the state name matches the one in your Animator Controller
-        string stateName = "Idle Walk Run Blend"; // Replace with the actual state name
-        if (overrideController[stateName] != null)
-        {
-            overrideController[stateName] = previewClip;
-        }
-        else
-        {
-            Debug.LogError($"State '{stateName}' not found in Animator Controller.");
-            return;
-        }
-
-        targetAnimator.runtimeAnimatorController = overrideController;
-        targetAnimator.Play(stateName);
     }
 
-    public void AddPunchAnimationToController(string stateName)
+    private void OnEnable()
     {
-        if (currentRecording == null || targetAnimator == null) return;
-
-        // Create a temporary animation clip for the punch
-        AnimationClip punchClip = new AnimationClip();
-        foreach (var kvp in curveDictionary)
+        // Subscribe to animator IK callback
+        if (targetAnimator != null)
         {
-            punchClip.SetCurve("", typeof(Transform), kvp.Key, kvp.Value);
+            targetAnimator.GetComponent<Animator>().updateMode = AnimatorUpdateMode.Normal;
         }
+    }
 
-        // Create a temporary AnimatorOverrideController to apply the clip
-        AnimatorOverrideController overrideController = new AnimatorOverrideController(targetAnimator.runtimeAnimatorController);
+    private void RecordTransformHierarchy(Transform transform, float time)
+    {
+        // Only record humanoid bones
+        HumanBodyBones[] bonesToRecord = {
+            HumanBodyBones.Hips,
+            HumanBodyBones.Spine,
+            HumanBodyBones.Chest,
+            HumanBodyBones.UpperChest,
+            HumanBodyBones.Neck,
+            HumanBodyBones.Head,
+            HumanBodyBones.LeftShoulder,
+            HumanBodyBones.LeftUpperArm,
+            HumanBodyBones.LeftLowerArm,
+            HumanBodyBones.LeftHand,
+            HumanBodyBones.RightShoulder,
+            HumanBodyBones.RightUpperArm,
+            HumanBodyBones.RightLowerArm,
+            HumanBodyBones.RightHand,
+            HumanBodyBones.LeftUpperLeg,
+            HumanBodyBones.LeftLowerLeg,
+            HumanBodyBones.LeftFoot,
+            HumanBodyBones.RightUpperLeg,
+            HumanBodyBones.RightLowerLeg,
+            HumanBodyBones.RightFoot
+        };
 
-        // Ensure the state name matches the one in your Animator Controller
-        if (overrideController[stateName] != null)
+        foreach (HumanBodyBones bone in bonesToRecord)
         {
-            overrideController[stateName] = punchClip;
+            Transform boneTransform = targetAnimator.GetBoneTransform(bone);
+            if (boneTransform != null)
+            {
+                string path = GetRelativePath(boneTransform, targetAnimator.transform);
+                
+                // Record position and rotation for each bone
+                AddCurveForProperty(path, "m_LocalPosition", boneTransform.localPosition, time);
+                AddCurveForProperty(path, "m_LocalRotation", boneTransform.localRotation, time);
+            }
         }
-        else
-        {
-            Debug.LogError($"State '{stateName}' not found in Animator Controller.");
-            return;
-        }
+    }
 
-        targetAnimator.runtimeAnimatorController = overrideController;
-        targetAnimator.Play(stateName);
+    private void AddCurveForProperty(string path, string propertyName, Vector3 value, float time)
+    {
+        if (propertyName == "m_LocalPosition")
+        {
+            AddKey($"{path}.localPosition.x", time, value.x);
+            AddKey($"{path}.localPosition.y", time, value.y);
+            AddKey($"{path}.localPosition.z", time, value.z);
+        }
+    }
+
+    private void AddCurveForProperty(string path, string propertyName, Quaternion value, float time)
+    {
+        if (propertyName == "m_LocalRotation")
+        {
+            AddKey($"{path}.localRotation.x", time, value.x);
+            AddKey($"{path}.localRotation.y", time, value.y);
+            AddKey($"{path}.localRotation.z", time, value.z);
+            AddKey($"{path}.localRotation.w", time, value.w);
+        }
+    }
+
+    private void AddKey(string propertyPath, float time, float value)
+    {
+        if (!curveDictionary.ContainsKey(propertyPath))
+        {
+            curveDictionary[propertyPath] = new AnimationCurve();
+        }
+        curveDictionary[propertyPath].AddKey(time, value);
+    }
+
+    private string GetRelativePath(Transform current, Transform root)
+    {
+        if (current == root) return "";
+        if (current.parent == root) return current.name;
+        return GetRelativePath(current.parent, root) + "/" + current.name;
+    }
+
+    public AnimationClip GetRecording(string animationName)
+    {
+        if (recordings.TryGetValue(animationName, out AnimationClip clip))
+        {
+            return clip;
+        }
+        Debug.LogWarning($"Recording for animation '{animationName}' not found.");
+        return null;
     }
 
     public void SetTargetAnimator(Animator animator)
     {
         targetAnimator = animator;
+    }
+
+    public void SaveRecording(string animationName)
+    {
+        if (recordings.ContainsKey(animationName))
+        {
+            Debug.Log($"Recording {animationName} saved in memory");
+        }
+        else
+        {
+            Debug.LogError($"No recording found to save for {animationName}");
+        }
+    }
+
+    public void PreviewRecording()
+    {
+        if (currentRecording == null || targetAnimator == null)
+        {
+            Debug.LogWarning("No recording to preview or no target animator set");
+            return;
+        }
+
+        // Create a temporary AnimatorOverrideController
+        AnimatorOverrideController overrideController = new AnimatorOverrideController(targetAnimator.runtimeAnimatorController);
+        
+        // Get the first state name from the controller
+        var currentClipInfo = targetAnimator.GetCurrentAnimatorClipInfo(0);
+        if (currentClipInfo.Length > 0)
+        {
+            string stateName = currentClipInfo[0].clip.name;
+            overrideController[stateName] = currentRecording;
+            targetAnimator.runtimeAnimatorController = overrideController;
+            Debug.Log($"Previewing animation on state: {stateName}");
+        }
+        else
+        {
+            Debug.LogError("No animation states found in animator controller");
+        }
     }
 }

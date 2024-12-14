@@ -446,6 +446,7 @@
 -analyzer:"C:/Program Files/Unity/Hub/Editor/6000.0.24f1/Editor/Data/Tools/Unity.SourceGenerators/Unity.SourceGenerators.dll"
 -analyzer:"C:/Program Files/Unity/Hub/Editor/6000.0.24f1/Editor/Data/Tools/Unity.SourceGenerators/Unity.UIToolkit.SourceGenerator.dll"
 "Assets/LeanTween/Editor/LeanTweenDocumentationEditor.cs"
+"Assets/Scripts/Editor/CreateBasicAnimatorMenu.cs"
 "Assets/StarterAssets/Editor/PackageChecker/PackageChecker.cs"
 "Assets/StarterAssets/Editor/ScriptingDefineUtils.cs"
 "Assets/StarterAssets/Editor/StarterAssetsDeployMenu.cs"

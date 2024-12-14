@@ -27,7 +27,10 @@ public class PlayerHealth : MonoBehaviour
     public void TakeDamage(int damage)
     {
         currentHealth -= damage;
-        healthBar.UpdateHealthBar(currentHealth);
+        if (healthBar != null)
+        {
+            healthBar.UpdateHealthBar(currentHealth);
+        }
         Debug.Log(gameObject.name + " took " + damage + " damage. Current health: " + currentHealth);
 
         if(currentHealth <= 0)
@@ -45,6 +48,9 @@ public class PlayerHealth : MonoBehaviour
     public void ResetHealth()
     {
         currentHealth = maxHealth;
-        healthBar.UpdateHealthBar(maxHealth);
+        if (healthBar != null)
+        {
+            healthBar.UpdateHealthBar(maxHealth);
+        }
     }
 }

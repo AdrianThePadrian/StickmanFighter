@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4515cbd0223e4674da0df2bea2ef2585, type: 3}
+  m_Name: BasicPlayerAnimator
+  m_EditorClassIdentifier: 
+  defaultIdleAnimation: {fileID: -203655887218126122, guid: c1e62bc66817a154f9dbc7bb9580b8e5, type: 3}
+  defaultMovingAnimation: {fileID: -203655887218126122, guid: 988ba5858723d934183a337e8565aaf8, type: 3}
+  defaultHighAttackAnimation: {fileID: -203655887218126122, guid: 3c0a2a5b817b606468469a4b15e78634, type: 3}
+  defaultLowAttackAnimation: {fileID: -203655887218126122, guid: ef803388ca50a4a40b278238ba14d1da, type: 3}
+  defaultVictoryAnimation: {fileID: -203655887218126122, guid: 9b458c36d1f3e144882f732102c7d9fd, type: 3}
+  defaultDefeatAnimation: {fileID: -203655887218126122, guid: 2ca93b8a9b5cf2040986a39af1365d5f, type: 3}

@@ -4,20 +4,15 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using static UnityEditor.Experimental.GraphView.GraphView;
 
-
 public class PlayerController : MonoBehaviour
 {
     [Header("Components")]
-    private Rigidbody rb;  // Change to 3D Rigidbody
+    private Rigidbody rb;
     private Animator animator;
     private PlayerAnimationController animController;
     public PlayerHealth playerHealth;
     private PlayerInput playerInput;
-
-    [Header("Input Actions")]
-    private InputAction moveAction;
-    private InputAction highAttackAction;
-    private InputAction lowAttackAction;
+    private int playerIndex;
 
     [Header("Movement")]
     public float moveSpeed = 5f;
@@ -39,40 +34,34 @@ public class PlayerController : MonoBehaviour
     private bool canAttack = true;
     private float attackTimer;
     private bool isHurt = false;
-    private int playerIndex;
-
-    [Header("Model")]
-    private GameObject playerModel;
-    public Transform modelRoot; // Reference to the root of the character model
 
     private void Awake()
     {
-        // Get components
         rb = GetComponent<Rigidbody>();
+        playerInput = GetComponent<PlayerInput>();
+        playerHealth = GetComponent<PlayerHealth>();
         animator = GetComponent<Animator>();
         animController = GetComponent<PlayerAnimationController>();
-        playerHealth = GetComponent<PlayerHealth>();
-        playerInput = GetComponent<PlayerInput>();
-        playerIndex = playerInput.playerIndex;
-
-        if (playerHealth == null || animController == null)
+        
+        if (playerInput == null)
         {
-            Debug.LogError("Required components missing on " + gameObject.name);
+            Debug.LogError("PlayerInput component missing!");
+            return;
         }
-
-        // Configure Rigidbody
-        rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
-        rb.interpolation = RigidbodyInterpolation.Interpolate;
-        rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
+        
+        playerIndex = playerInput.playerIndex;
+        Debug.Log($"PlayerController Awake - Player {playerIndex} initialized");
     }
 
     public void OnMove(InputValue value)
     {
         moveInput = value.Get<Vector2>();
+        Debug.Log($"Move Input received: {moveInput}");
     }
 
     public void OnHighAttack(InputValue value)
     {
+        Debug.Log("High Attack Input received");
         if (canAttack && !isHurt)
         {
             canMove = false;
@@ -84,6 +73,7 @@ public class PlayerController : MonoBehaviour
 
     public void OnLowAttack(InputValue value)
     {
+        Debug.Log("Low Attack Input received");
         if (canAttack && !isHurt)
         {
             canMove = false;
@@ -104,21 +94,19 @@ public class PlayerController : MonoBehaviour
             }
         }
 
-        if (canMove)
+        if (canMove && !rb.isKinematic)
         {
-            Vector3 movement = new Vector3(moveInput.x, 0, moveInput.y) * moveSpeed;
-            rb.linearVelocity = new Vector3(movement.x, rb.linearVelocity.y, movement.z);
-            
-            // Rotate character to face movement direction
-            if (movement != Vector3.zero)
+            Vector3 movement = new Vector3(moveInput.x, 0f, 0f) * moveSpeed;
+            rb.linearVelocity = movement;
+
+            if (animController != null)
             {
-                transform.rotation = Quaternion.LookRotation(movement);
-                animController.SetMoving(true);
+                animController.SetMoving(Mathf.Abs(movement.x) > 0.1f);
             }
-            else
-            {
-                animController.SetMoving(false);
-            }
+        }
+        else if (!rb.isKinematic)
+        {
+            rb.linearVelocity = Vector3.zero;
         }
     }
 
@@ -179,44 +167,33 @@ public class PlayerController : MonoBehaviour
 
     public void ResetPlayer()
     {
+        Debug.Log($"ResetPlayer called for player {playerIndex}");
+        // Reset state
         canMove = true;
         canAttack = true;
         isHurt = false;
         attackTimer = 0;
+        moveInput = Vector2.zero;
         
+        // Reset position
         Transform spawnPoint = PlayerSpawner.instance.GetSpawnPoint(playerIndex);
         if (spawnPoint != null)
         {
             transform.position = spawnPoint.position;
-            transform.rotation = playerIndex == 0 ? Quaternion.identity : Quaternion.Euler(0, 180, 0);
+            transform.rotation = playerIndex == 0 ? 
+                Quaternion.Euler(0, 90, 0) : 
+                Quaternion.Euler(0, -90, 0);
+                
+            // Reset physics
+            if (rb != null)
+            {
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+            }
         }
-    }
-
-    // Add this method to initialize the model
-    public void InitializeModel(GameObject model)
-    {
-        playerModel = model;
-        modelRoot = model.transform;
-        
-        // Update attack points to use the new model's transforms if needed
-        Transform attackPointsParent = modelRoot.Find("AttackPoints");
-        if (attackPointsParent != null)
+        else
         {
-            highAttackPoint = attackPointsParent.Find("HighAttackPoint");
-            lowAttackPoint = attackPointsParent.Find("LowAttackPoint");
-        }
-
-        // Get animator from the model if it exists there
-        animator = model.GetComponent<Animator>();
-        if (animator == null)
-        {
-            animator = model.AddComponent<Animator>();
-        }
-        
-        // Ensure AnimationController is updated with the new animator
-        if (animController != null)
-        {
-            StartCoroutine(animController.InitializeAnimator());
+            Debug.LogError($"Spawn point not found for player {playerIndex}");
         }
     }
 }

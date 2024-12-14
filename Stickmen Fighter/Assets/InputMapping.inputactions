@@ -2,7 +2,7 @@
     "name": "InputMapping",
     "maps": [
         {
-            "name": "Player1",
+            "name": "Player",
             "id": "5ec3b492-e175-4167-a47e-b28f84aaaa0f",
             "actions": [
                 {
@@ -27,6 +27,15 @@
                     "name": "HighAttack",
                     "type": "Button",
                     "id": "be04c2e9-242c-4f04-9534-8c49ac838465",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Join",
+                    "type": "Button",
+                    "id": "da06b547-ff27-41a9-9a8f-5fe9442849ed",
                     "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
@@ -145,7 +154,7 @@
                     "isPartOfComposite": true
                 },
                 {
-                    "name": "MnK",
+                    "name": "WASD",
                     "id": "fe22eec8-a61e-43db-83b7-5b49876c117e",
                     "path": "2DVector",
                     "interactions": "",
@@ -264,6 +273,28 @@
                     "action": "HighAttack",
                     "isComposite": false,
                     "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "a2be74cf-6233-427a-a49f-343f11896440",
+                    "path": "<Gamepad>/start",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Join",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "b599fcee-8911-4ac0-b58f-3b58ad3b60a0",
+                    "path": "<Keyboard>/enter",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Join",
+                    "isComposite": false,
+                    "isPartOfComposite": false
                 }
             ]
         },
@@ -275,7 +306,7 @@
                     "name": "New action",
                     "type": "Button",
                     "id": "a57e4169-7167-4e09-9a45-59f18e827fc9",
-                    "expectedControlType": "Button",
+                    "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false

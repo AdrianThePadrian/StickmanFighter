@@ -1,13 +1,11 @@
 using System.Collections;
 using System.Collections.Generic;
-using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 public class GameManager : MonoBehaviour
 {
-
     public static GameManager instance;
     public Text roundDisplay;
     public Text countdownDisplay;
@@ -24,7 +22,7 @@ public class GameManager : MonoBehaviour
 
     private bool isRoundActive = false;
 
-    //UI
+    // UI
     public HealthBar player1HealthBar;
     public HealthBar player2HealthBar;
     public GameObject[] player1WinIcons;
@@ -51,7 +49,6 @@ public class GameManager : MonoBehaviour
     {
         roundDisplay.text = "Round " + currentRound;
 
-        ResetPlayers();
         AssignHealthBarsToPlayers(player1.GetComponent<PlayerHealth>(), 0);
         AssignHealthBarsToPlayers(player2.GetComponent<PlayerHealth>(), 1);
 
@@ -60,19 +57,32 @@ public class GameManager : MonoBehaviour
 
     private IEnumerator RoundTransition()
     {
+        isRoundActive = false;
+        
         // stop players from moving
-        player1.enabled = false;
-        player2.enabled = false;
+        if (player1 != null)
+        {
+            player1.enabled = false;
+            player1.ResetPlayer();
+            player1.SetVictoryPose();
+        }
+        
+        if (player2 != null)
+        {
+            player2.enabled = false;
+            player2.ResetPlayer();
+            player2.SetDefeatPose();
+        }
 
         // Pause for a few seconds to display victory and defeat poses
         yield return new WaitForSeconds(3f);
 
-        // Reset the round, players, and health for the next round
+        currentRound++;
         StartRound();
     }
+
     public void OnPlayerJoined(PlayerInput playerInput)
     {
-
         // Assign players based on their index
         if (playerInput.playerIndex == 0)
         {
@@ -81,14 +91,11 @@ public class GameManager : MonoBehaviour
         else if (playerInput.playerIndex == 1)
         {
             player2 = playerInput.GetComponent<PlayerController>();
-
         }
 
         // If both players have joined, start the round
         if (player1 != null && player2 != null)
         {
-            player1.enabled = false;
-            player2.enabled = false;
             StartRound();
         }
     }
@@ -140,7 +147,30 @@ public class GameManager : MonoBehaviour
     {
         int countdownTime = 3;
 
-        while(countdownTime > 0)
+        // Make sure players are disabled but components are ready
+        if (player1 != null)
+        {
+            player1.enabled = false;  // This disables the PlayerController
+            Rigidbody rb1 = player1.GetComponent<Rigidbody>();
+            if (rb1 != null) 
+            {
+                rb1.isKinematic = true;
+                rb1.linearVelocity = Vector3.zero;
+            }
+        }
+        
+        if (player2 != null)
+        {
+            player2.enabled = false;  // This disables the PlayerController
+            Rigidbody rb2 = player2.GetComponent<Rigidbody>();
+            if (rb2 != null) 
+            {
+                rb2.isKinematic = true;
+                rb2.linearVelocity = Vector3.zero;
+            }
+        }
+
+        while (countdownTime > 0)
         {
             countdownDisplay.text = countdownTime.ToString();
             yield return new WaitForSeconds(1f);
@@ -149,11 +179,30 @@ public class GameManager : MonoBehaviour
 
         countdownDisplay.text = "Fight!";
         yield return new WaitForSeconds(1f);
-
         countdownDisplay.text = null;
 
-        player1.enabled = true;
-        player2.enabled = true;
+        // Re-enable players
+        if (player1 != null)
+        {
+            player1.enabled = true;  // This enables the PlayerController
+            Rigidbody rb1 = player1.GetComponent<Rigidbody>();
+            if (rb1 != null) 
+            {
+                rb1.isKinematic = false;
+                rb1.WakeUp();
+            }
+        }
+        
+        if (player2 != null)
+        {
+            player2.enabled = true;  // This enables the PlayerController
+            Rigidbody rb2 = player2.GetComponent<Rigidbody>();
+            if (rb2 != null) 
+            {
+                rb2.isKinematic = false;
+                rb2.WakeUp();
+            }
+        }
 
         isRoundActive = true;
     }
@@ -162,7 +211,7 @@ public class GameManager : MonoBehaviour
     {
         if (!isRoundActive) return;
 
-        if(defeatedPlayer == player1)
+        if (defeatedPlayer == player1)
         {
             EndRound(winningPlayerIndex: 1);
         }
@@ -170,54 +219,31 @@ public class GameManager : MonoBehaviour
         {
             EndRound(winningPlayerIndex: 0);
         }
-
-        isRoundActive = false;
     }
 
     private void EndRound(int winningPlayerIndex)
     {
-        currentRound++;
+        isRoundActive = false;
 
         if (winningPlayerIndex == 0)
         {
             player1Wins++;
             UpdateWinIcons(player1WinIcons, player1Wins);
-            player1.SetVictoryPose();
-            player2.SetDefeatPose();
-
-            if (player1Wins >= totalRounds)
-            {
-                player1.enabled = false;
-                player2.enabled = false;
-
-                Debug.Log("Player 1 Wins the Game!");
-                EndGame();
-            }
-            else
-            {
-                StartCoroutine(RoundTransition());
-            }
         }
-        else if (winningPlayerIndex == 1)
+        else
         {
             player2Wins++;
             UpdateWinIcons(player2WinIcons, player2Wins);
-            player2.SetVictoryPose();
-            player1.SetDefeatPose();
+        }
 
-            if (player2Wins >= totalRounds)
-            {
-                player1.enabled = false;
-                player2.enabled = false;
-
-                Debug.Log("Player 2 Wins the Game!");
-                EndGame();
-            }
-            else
-            {
-                StartCoroutine(RoundTransition());
-            }
-        }  
+        if (player1Wins >= totalRounds || player2Wins >= totalRounds)
+        {
+            EndGame();
+        }
+        else
+        {
+            StartCoroutine(RoundTransition());
+        }
     }
 
     private void UpdateWinIcons(GameObject[] winIcons, int winCount)
@@ -227,7 +253,6 @@ public class GameManager : MonoBehaviour
             winIcons[i].SetActive(i < winCount);
         }
     }
-
 
     private void EndGame()
     {
@@ -240,6 +265,4 @@ public class GameManager : MonoBehaviour
             roundDisplay.text = "Player 2 Wins!";
         }
     }
-
-
 }

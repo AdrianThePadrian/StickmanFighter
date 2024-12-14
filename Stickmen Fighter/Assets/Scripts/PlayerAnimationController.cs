@@ -7,18 +7,17 @@ public class PlayerAnimationController : MonoBehaviour
 
     private void Awake()
     {
-        animator = GetComponent<Animator>();
+        animator = gameObject.GetComponent<Animator>();
         if (animator == null)
         {
-            Debug.LogError("Animator component missing from PlayerAnimationController.");
+            Debug.LogWarning("Animator component not found. Animations will be disabled.");
         }
     }
 
     public IEnumerator InitializeAnimator()
     {
-        // Initialize or reset animator parameters if needed
         Debug.Log("Animator initialized.");
-        yield return null; // This allows the method to be used with StartCoroutine
+        yield return null;
     }
 
     public void PlayHighAttack()
@@ -59,5 +58,10 @@ public class PlayerAnimationController : MonoBehaviour
         {
             animator.SetBool("IsMoving", isMoving);
         }
+    }
+
+    public void SetAnimator(Animator newAnimator)
+    {
+        animator = newAnimator;
     }
 }
