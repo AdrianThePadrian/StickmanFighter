@@ -1,0 +1,12 @@
+.unity-text-element {
+    /* define default font size to ensure it's consistent across Unity versions */
+    font-size: 12px;
+}
+
+.mui-action-cursor {
+    cursor: arrow;
+}
+
+.appui-button {
+    cursor: arrow;
+}

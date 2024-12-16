@@ -1391,7 +1391,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 957420523}
-  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+  m_Mesh: {fileID: 0}
 --- !u!54 &957420528
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -1711,7 +1711,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1089155272}
-  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+  m_Mesh: {fileID: 0}
 --- !u!54 &1089155277
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -2723,7 +2723,7 @@ MonoBehaviour:
   player1Spawn: {fileID: 75777520}
   player2Spawn: {fileID: 643766581}
   inputActions: {fileID: -944628639613478452, guid: df37dffe5812dc14c9cce5aa63dfeced, type: 3}
-  useOverrideAnimations: 1
+  useOverrideAnimations: 0
 --- !u!114 &2007037493
 MonoBehaviour:
   m_ObjectHideFlags: 0
